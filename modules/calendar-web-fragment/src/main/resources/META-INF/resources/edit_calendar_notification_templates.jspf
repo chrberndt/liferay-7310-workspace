@@ -1,0 +1,257 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<%--
+  /**
+   * Custom jsp(f) fragment derived from
+   * calendar-web/src/main/resources/META-INF/resources/edit_calendar_notification_templates.jspf (4.0.86)
+   */
+--%>
+<%@ page import="com.liferay.portal.kernel.util.PropsUtil" %>
+<%
+    String tabs3 = ParamUtil.getString(request, "tabs3", "invite-email");
+
+    // Custom NotificationTemplateType and NotificationType handling because of the "instance-deleted" and "moved-to-trash" type
+    String type;
+    switch (tabs3) {
+        case "deleted-email" :
+            type = "moved-to-trash";
+            break;
+        case "reminder-email":
+            type = "reminder";
+            break;
+        case "update-email":
+            type = "update";
+            break;
+        default: type = "invite";
+    };
+
+    NotificationTemplateType notificationTemplateType = NotificationTemplateType.parse(type);
+    // In 7.3.10 the only supported NotificationType is email
+    NotificationType notificationType = NotificationType.parse("email");
+
+//    String[] tabs3Values = StringUtil.split(tabs3, StringPool.DASH);
+//    NotificationTemplateType notificationTemplateType = NotificationTemplateType.parse(tabs3Values[0]);
+//    NotificationType notificationType = NotificationType.parse(tabs3Values[1]);
+
+    CalendarNotificationTemplate calendarNotificationTemplate = CalendarNotificationTemplateLocalServiceUtil.fetchCalendarNotificationTemplate(calendar.getCalendarId(), notificationType, notificationTemplateType);
+
+    long calendarNotificationTemplateId = BeanPropertiesUtil.getLong(calendarNotificationTemplate, "calendarNotificationTemplateId");
+
+    // Custom fromAddress and fromName handling for deleted-email and update-email
+    boolean isAddressEditable;
+    String fromAddress;
+    String fromName;
+    if ("deleted-email".equals(tabs3) || "update-email".equals(tabs3)) {
+        fromAddress = PropsUtil.get("custom.calendar.from.address");
+        fromName = PropsUtil.get("custom.calendar.from.name");
+        isAddressEditable = false;
+    } else {
+        fromAddress = NotificationUtil.getTemplatePropertyValue(calendarNotificationTemplate, CalendarNotificationTemplateConstants.PROPERTY_FROM_ADDRESS, PrefsPropsUtil.getString(PropsKeys.ADMIN_EMAIL_FROM_ADDRESS));
+        fromName = NotificationUtil.getTemplatePropertyValue(calendarNotificationTemplate, CalendarNotificationTemplateConstants.PROPERTY_FROM_NAME, PrefsPropsUtil.getString(PropsKeys.ADMIN_EMAIL_FROM_NAME));
+        isAddressEditable = true;
+    }
+//    String fromAddress = NotificationUtil.getTemplatePropertyValue(calendarNotificationTemplate, CalendarNotificationTemplateConstants.PROPERTY_FROM_ADDRESS, PrefsPropsUtil.getString(PropsKeys.ADMIN_EMAIL_FROM_ADDRESS));
+//    String fromName = NotificationUtil.getTemplatePropertyValue(calendarNotificationTemplate, CalendarNotificationTemplateConstants.PROPERTY_FROM_NAME, PrefsPropsUtil.getString(PropsKeys.ADMIN_EMAIL_FROM_NAME));
+    String notificationTemplateBody = BeanPropertiesUtil.getString(calendarNotificationTemplate, "body", NotificationUtil.getDefaultTemplate(notificationType, notificationTemplateType, NotificationField.BODY));
+%>
+
+<liferay-ui:header
+        backURL="<%= backURL %>"
+        cssClass="container-fluid-1280"
+        localizeTitle="<%= false %>"
+        title="<%= calendarName %>"
+/>
+
+<aui:nav-bar cssClass="container-fluid-1280" markupView="lexicon">
+    <aui:nav cssClass="navbar-nav">
+
+        <%
+            navigationURL.setParameter("tabs3", "invite-email");
+        %>
+
+        <aui:nav-item href="<%= navigationURL.toString() %>" label="invite-email" selected='<%= tabs3.equals("invite-email") %>' />
+
+        <%
+            navigationURL.setParameter("tabs3", "reminder-email");
+        %>
+
+        <aui:nav-item href="<%= navigationURL.toString() %>" label="reminder-email" selected='<%= tabs3.equals("reminder-email") %>' />
+
+        <%--
+        /**
+         * Custom configuration options update/delete-email
+         */
+        --%>
+        <%
+            navigationURL.setParameter("tabs3", "update-email");
+        %>
+
+        <aui:nav-item href="<%= navigationURL.toString() %>" label="update-email" selected='<%= tabs3.equals("update-email") %>' />
+
+        <%
+            navigationURL.setParameter("tabs3", "deleted-email");
+        %>
+
+        <aui:nav-item href="<%= navigationURL.toString() %>" label="deleted-email" selected='<%= tabs3.equals("deleted-email") %>' />
+    </aui:nav>
+</aui:nav-bar>
+
+<liferay-portlet:actionURL name="updateCalendarNotificationTemplate" var="updateCalendarNotificationTemplateURL" />
+
+<aui:form action="<%= updateCalendarNotificationTemplateURL %>" cssClass="container-fluid-1280" method="post" name="fm" onSubmit='<%= "event.preventDefault(); " + liferayPortletResponse.getNamespace() + "updateCalendarNotificationTemplate();" %>'>
+    <aui:input name="mvcPath" type="hidden" value="/edit_calendar.jsp" />
+    <aui:input name="calendarNotificationTemplateId" type="hidden" value="<%= calendarNotificationTemplateId %>" />
+    <aui:input name="tabs2" type="hidden" value="<%= tabs2 %>" />
+    <aui:input name="tabs3" type="hidden" value="<%= tabs3 %>" />
+    <aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
+    <aui:input name="calendarId" type="hidden" value="<%= String.valueOf(calendar.getCalendarId()) %>" />
+    <aui:input name="calendarResourceId" type="hidden" value="<%= (calendarResource != null) ? String.valueOf(calendarResource.getCalendarResourceId()) : StringPool.BLANK %>" />
+    <aui:input name="notificationType" type="hidden" value="<%= notificationType.getValue() %>" />
+    <aui:input name="notificationTemplateType" type="hidden" value="<%= notificationTemplateType.getValue() %>" />
+
+    <aui:model-context bean="<%= calendarNotificationTemplate %>" model="<%= CalendarNotificationTemplate.class %>" />
+
+    <aui:fieldset>
+
+        <%--
+            // Disable from name and from address for deleted-email and update-email
+        --%>
+
+        <aui:input name="fromName" value="<%= fromName %>" disabled="<%= !isAddressEditable %>"/>
+        <c:if test="<%= !isAddressEditable %>">
+            <aui:input name="fromName" type="hidden" value="<%= fromName %>"/>
+        </c:if>
+
+        <aui:input name="fromAddress" value="<%= fromAddress %>" disabled="<%= !isAddressEditable %>"/>
+        <c:if test="<%= !isAddressEditable %>">
+            <aui:input name="fromAddress" type="hidden" value="<%= fromAddress %>"/>
+        </c:if>
+
+        <aui:input name="subject" value='<%= BeanPropertiesUtil.getString(calendarNotificationTemplate, "subject", NotificationUtil.getDefaultTemplate(notificationType, notificationTemplateType, NotificationField.SUBJECT)) %>' />
+
+        <aui:field-wrapper label="body">
+            <liferay-editor:editor
+                    contents="<%= notificationTemplateBody %>"
+                    editorName="ckeditor"
+            />
+
+            <aui:input name="body" type="hidden" value="<%= notificationTemplateBody %>" />
+        </aui:field-wrapper>
+    </aui:fieldset>
+
+    <div class="definition-of-terms">
+        <h4><liferay-ui:message key="definition-of-terms" /></h4>
+
+        <dl>
+            <dt>
+                [$COMPANY_ID$]
+            </dt>
+            <dd>
+                <liferay-ui:message key="the-company-id-associated-with-the-calendar-booking" />
+            </dd>
+            <dt>
+                [$CALENDAR_NAME$]
+            </dt>
+            <dd>
+                <liferay-ui:message key="the-calendar-name" />
+            </dd>
+            <dt>
+                [$EVENT_LOCATION$]
+            </dt>
+            <dd>
+                <liferay-ui:message key="the-calendar-booking-location" />
+            </dd>
+            <dt>
+                [$EVENT_START_DATE$]
+            </dt>
+            <dd>
+                <liferay-ui:message key="the-calendar-booking-start-date" />
+            </dd>
+            <dt>
+                [$EVENT_TITLE$]
+            </dt>
+            <dd>
+                <liferay-ui:message key="the-calendar-booking-title" />
+            </dd>
+
+            <c:if test="<%= notificationTemplateType == NotificationTemplateType.INVITE %>">
+                <dt>
+                    [$EVENT_URL$]
+                </dt>
+                <dd>
+                    <liferay-ui:message key="the-calendar-booking-url" />
+                </dd>
+            </c:if>
+
+            <dt>
+                [$FROM_ADDRESS$]
+            </dt>
+            <dd>
+                <%= HtmlUtil.escape(fromAddress) %>
+            </dd>
+            <dt>
+                [$FROM_NAME$]
+            </dt>
+            <dd>
+                <%= HtmlUtil.escape(fromName) %>
+            </dd>
+            <dt>
+                [$PORTAL_URL$]
+            </dt>
+            <dd>
+                <%= company.getVirtualHostname() %>
+            </dd>
+
+            <%
+                Group calendarGroup = GroupLocalServiceUtil.getGroup(calendar.getGroupId());
+            %>
+
+            <c:if test="<%= calendarGroup.isSite() %>">
+                <dt>
+                    [$SITE_NAME$]
+                </dt>
+                <dd>
+                    <liferay-ui:message key="the-site-name-associated-with-the-calendar-booking" />
+                </dd>
+            </c:if>
+
+            <dt>
+                [$TO_ADDRESS$]
+            </dt>
+            <dd>
+                <liferay-ui:message key="the-address-of-the-email-recipient" />
+            </dd>
+            <dt>
+                [$TO_NAME$]
+            </dt>
+            <dd>
+                <liferay-ui:message key="the-name-of-the-email-recipient" />
+            </dd>
+        </dl>
+    </div>
+
+    <aui:button-row>
+        <aui:button type="submit" />
+
+        <aui:button href="<%= redirect %>" type="cancel" />
+    </aui:button-row>
+</aui:form>
+
+<aui:script>
+    function <portlet:namespace />updateCalendarNotificationTemplate() {
+    var notificationTemplateContentBody = document.getElementById(
+    '<portlet:namespace />body'
+    );
+
+    if (notificationTemplateContentBody) {
+    notificationTemplateContentBody.value = window.<portlet:namespace />editor.getHTML();
+    }
+
+    submitForm(document.<portlet:namespace />fm);
+    }
+</aui:script>

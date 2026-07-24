@@ -1,0 +1,5 @@
+Bundle-Name: Liferay Calendar Web Fragment
+Bundle-SymbolicName: com.example.calendar.web.fragment
+Bundle-Version: 1.0.0
+Fragment-Host: com.liferay.calendar.web;bundle-version="[4.0.86,5.0.0)"
+#-dsannotations-options: inherit
