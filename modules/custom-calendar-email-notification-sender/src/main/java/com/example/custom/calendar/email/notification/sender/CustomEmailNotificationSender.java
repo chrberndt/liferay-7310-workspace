@@ -54,7 +54,7 @@ public class CustomEmailNotificationSender implements NotificationSender {
                         fromName = customFromName;
                     }
                 } else {
-                    // TODO: No template configured - always replace fromAddress and fromName?
+                    // No template configured - always replace fromAddress and fromName
                     fromAddress = customFromAddress;
                     fromName = customFromName;
                 }
