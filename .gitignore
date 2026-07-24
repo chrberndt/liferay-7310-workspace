@@ -8,6 +8,7 @@
 **/build
 **/build_gradle
 **/dist
+**/activation-key-dxpdevelopment-7.4-developeractivationkeys.xml
 **/node_modules
 **/node_modules_cache
 **/test-coverage
